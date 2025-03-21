@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  php:
+    build: .
+    container_name: php_apache
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+      - minio
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=mydatabase
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - S3_BUCKET=my-bucket
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadminpassword
+
+  postgres:
+    image: postgres:17.4-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio_server
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    volumes:
+      - minio_data:/data
+    entrypoint: sh
+    command: -c "mkdir -p /data/my-bucket && minio server --console-address ':9001' /data"
+
+volumes:
+  pg_data:
+  minio_data:
